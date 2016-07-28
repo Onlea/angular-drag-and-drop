@@ -1,429 +1,506 @@
-var module;
+angular.module("onlea.components.dnd", []);
 
-module = angular.module("laneolson.ui.dragdrop", []);
+var DragAndDropController;
 
-module.directive('dragAndDrop', [
-  '$document', function($document) {
-    return {
-      restrict: 'AE',
-      scope: {
-        onItemPlaced: "&",
-        onItemRemoved: "&",
-        onDrag: "&",
-        onDragStart: "&",
-        onDragEnd: "&",
-        onDragEnter: "&",
-        onDragLeave: "&",
-        enableSwap: "=",
-        fixedPositions: "="
-      },
-      require: 'dragAndDrop',
-      controller: [
-        '$q', '$scope', function($q, $scope) {
-          var currentDroppable, draggables, droppables, element, handlers, isInside, isIntersecting, isReady;
-          $scope.draggables = draggables = [];
-          $scope.droppables = droppables = [];
-          $scope.isDragging = false;
-          $scope.currentDraggable = null;
-          currentDroppable = null;
-          element = null;
-          isReady = false;
-          handlers = [];
-          isInside = function(point, bounds) {
-            var ref, ref1;
-            return (bounds.left < (ref = point[0]) && ref < bounds.right) && (bounds.top < (ref1 = point[1]) && ref1 < bounds.bottom);
-          };
-          isIntersecting = function(r1, r2) {
-            return !(r2.left > r1.right || r2.right < r1.left || r2.top > r1.bottom || r2.bottom < r1.top);
-          };
-          this.on = function(e, cb) {
-            if (e === "ready" && isReady) {
-              cb();
-            }
-            return handlers.push({
-              name: e,
-              cb: cb
-            });
-          };
-          this.trigger = function(e) {
-            var h, i, len, results;
-            if (e === "ready") {
-              isReady = true;
-            }
-            results = [];
-            for (i = 0, len = handlers.length; i < len; i++) {
-              h = handlers[i];
-              if (h.name === e) {
-                results.push(h.cb());
-              } else {
-                results.push(void 0);
-              }
-            }
-            return results;
-          };
-          this.isReady = function() {
-            return isReady;
-          };
-          this.setDragAndDropElement = function(el) {
-            return element = el;
-          };
-          this.getDragAndDropElement = function() {
-            return element;
-          };
-          this.checkForIntersection = function() {
-            var dropSpot, i, len, results;
-            results = [];
-            for (i = 0, len = droppables.length; i < len; i++) {
-              dropSpot = droppables[i];
-              if (isInside($scope.currentDraggable.midPoint, dropSpot)) {
-                if (!dropSpot.isActive) {
-                  this.setCurrentDroppable(dropSpot);
-                  dropSpot.activate();
-                  results.push(this.fireCallback('drag-enter'));
-                } else {
-                  results.push(void 0);
-                }
-              } else {
-                if (dropSpot.isActive) {
-                  this.setCurrentDroppable(null);
-                  dropSpot.deactivate();
-                  results.push(this.fireCallback('drag-leave'));
-                } else {
-                  results.push(void 0);
-                }
-              }
-            }
-            return results;
-          };
-          this.setCurrentDraggable = function(draggable) {
-            $scope.currentDraggable = draggable;
-            if (draggable) {
-              this.fireCallback('drag-start');
-            }
-            return $scope.$evalAsync(function() {
-              $scope.currentDraggable = draggable;
-              if (draggable) {
-                return $scope.isDragging = true;
-              } else {
-                return $scope.isDragging = false;
-              }
-            });
-          };
-          this.getCurrentDraggable = function() {
-            return $scope.currentDraggable;
-          };
-          this.setCurrentDroppable = function(droppable) {
-            return currentDroppable = droppable;
-          };
-          this.getCurrentDroppable = function() {
-            return currentDroppable;
-          };
-          this.addDroppable = function(droppable) {
-            return droppables.push(droppable);
-          };
-          this.addDraggable = function(draggable) {
-            return draggables.push(draggable);
-          };
-          this.fireCallback = function(type, e) {
-            var state;
-            state = {
-              draggable: this.getCurrentDraggable(),
-              droppable: this.getCurrentDroppable(),
-              dragEvent: e
-            };
-            switch (type) {
-              case 'drag-end':
-                if (typeof $scope.onDragEnd === "function") {
-                  $scope.onDragEnd(state);
-                }
-                return this.trigger("drag-end");
-              case 'drag-start':
-                if (typeof $scope.onDragStart === "function") {
-                  $scope.onDragStart(state);
-                }
-                return this.trigger("drag-start");
-              case 'drag':
-                return typeof $scope.onDrag === "function" ? $scope.onDrag(state) : void 0;
-              case 'item-assigned':
-                return typeof $scope.onItemPlaced === "function" ? $scope.onItemPlaced(state) : void 0;
-              case 'item-removed':
-                return typeof $scope.onItemRemoved === "function" ? $scope.onItemRemoved(state) : void 0;
-              case 'drag-leave':
-                return typeof $scope.onDragLeave === "function" ? $scope.onDragLeave(state) : void 0;
-              case 'drag-enter':
-                return typeof $scope.onDragEnter === "function" ? $scope.onDragEnter(state) : void 0;
-            }
-          };
+DragAndDropController = function($scope) {
+  var element, eventList, handleMove, handleRelease, handlers, isInside, isIntersecting, isReady, vm;
+  isInside = function(point, bounds) {
+    var ref, ref1;
+    return (bounds.left < (ref = point[0]) && ref < bounds.right) && (bounds.top < (ref1 = point[1]) && ref1 < bounds.bottom);
+  };
+  isIntersecting = function(r1, r2) {
+    return !(r2.left > r1.right || r2.right < r1.left || r2.top > r1.bottom || r2.bottom < r1.top);
+  };
+  element = null;
+  isReady = false;
+  handlers = [];
+  eventList = {};
+  vm = this;
+  vm.draggables = [];
+  vm.droppables = [];
+  vm.isDragging = false;
+  vm.currentDraggable = null;
+  vm.currentDroppable = null;
+  vm.fixedPositions = false;
+  vm.getEvent = function(name) {
+    if (eventList.hasOwnProperty(name)) {
+      return eventList;
+    }
+  };
+  vm.getDragAndDropElement = function() {
+    return element;
+  };
+  vm.getState = function() {
+    var state;
+    state = {
+      draggable: vm.getCurrentDraggable(),
+      droppable: vm.getCurrentDroppable()
+    };
+    return state;
+  };
+  vm.getCurrentDraggable = function() {
+    return vm.currentDraggable;
+  };
+  vm.getCurrentDroppable = function() {
+    return vm.currentDroppable;
+  };
+  vm.isReady = function() {
+    return isReady;
+  };
+  vm.setEvent = function(eventName, eventValue) {
+    eventList[eventName] = eventValue;
+    return vm;
+  };
+  vm.setDragAndDropElement = function(el) {
+    element = el;
+    return vm;
+  };
+  vm.setFixedPositions = function(val) {
+    if (val) {
+      vm.fixedPositions = true;
+    } else {
+      vm.fixedPositions = false;
+    }
+    return vm;
+  };
+  vm.setCurrentDraggable = function(draggable) {
+    vm.currentDraggable = draggable;
+    if (draggable) {
+      vm.fireCallback('drag-start');
+    }
+    $scope.$evalAsync(function() {
+      vm.currentDraggable = draggable;
+      if (draggable) {
+        return vm.isDragging = true;
+      } else {
+        return vm.isDragging = false;
+      }
+    });
+    return vm;
+  };
+  vm.setCurrentDroppable = function(droppable) {
+    vm.currentDroppable = droppable;
+    return vm;
+  };
+  handleMove = function(state) {
+    var draggable, e;
+    draggable = state.draggable;
+    e = state.dragEvent;
+    if (e.touches && e.touches.length === 1) {
+      draggable.updateOffset(e.touches[0].clientX, e.touches[0].clientY);
+    } else {
+      draggable.updateOffset(e.clientX, e.clientY);
+    }
+    return vm.checkForIntersection();
+  };
+  handleRelease = function(state) {
+    var draggable, dropSpot;
+    draggable = state.draggable;
+    dropSpot = state.droppable;
+    draggable.deactivate();
+    if (dropSpot && !dropSpot.isFull) {
+      vm.assignItem(draggable, dropSpot);
+    } else if (dropSpot && dropSpot.isFull && scope.enableSwap) {
+      vm.swapItems(dropSpot.items[0], draggable);
+    } else {
+      vm.unassignItem(draggabl);
+      if (vm.fixedPositions) {
+        draggable.returnToStartPosition();
+      }
+    }
+    if (dropSpot) {
+      dropSpot.deactivate();
+    }
+    return vm.setCurrentDraggable(null);
+  };
+  vm.unassignItem = function(dragItem, dropSpot) {
+    var fromSpots, i, len, results, spot;
+    if (dropSpot) {
+      fromSpots = [dropSpot];
+    } else {
+      fromSpots = dragItem.dropSpots;
+    }
+    results = [];
+    for (i = 0, len = fromSpots.length; i < len; i++) {
+      spot = fromSpots[i];
+      dragItem.removeFrom(spot);
+      results.push(vm.trigger('item-removed', vm.getEvent("drag-end")));
+    }
+    return results;
+  };
+  vm.assignItem = function(dragItem, dropSpot) {
+    dragItem.assignTo(dropSpot);
+    dropSpot.itemDropped(dragItem);
+    return vm.trigger('item-assigned', vm.getEvent("drag-end"));
+  };
+  vm.swapItems = function(item1, item2) {
+    var destSpot, destination, i, j, len, len1, ref, results, spot;
+    destination = [];
+    ref = item1.dropSpots;
+    for (i = 0, len = ref.length; i < len; i++) {
+      spot = ref[i];
+      destination.push(spot);
+    }
+    vm.unassignItem(item1);
+    item1.returnToStartPosition();
+    results = [];
+    for (j = 0, len1 = destination.length; j < len1; j++) {
+      destSpot = destination[j];
+      results.push(vm.assignItem(item2, destSpot));
+    }
+    return results;
+  };
+  vm.on = function(eventName, cb) {
+    if (cb) {
+      if (eventName === "ready" && isReady) {
+        cb();
+      }
+      handlers.push({
+        name: eventName,
+        cb: cb
+      });
+    }
+    return vm;
+  };
+  vm.trigger = function(eventName, eventData) {
+    var h, i, len, results, state;
+    state = vm.getState();
+    if (eventName === "ready") {
+      isReady = true;
+    }
+    if (eventData) {
+      vm.setEvent(name, eventData);
+      state.dragEvent = eventData;
+    }
+    results = [];
+    for (i = 0, len = handlers.length; i < len; i++) {
+      h = handlers[i];
+      if (h.name === eventName) {
+        results.push(h.cb(state));
+      } else {
+        results.push(void 0);
+      }
+    }
+    return results;
+  };
+  vm.checkForIntersection = function() {
+    var dropSpot, i, len, ref;
+    ref = vm.droppables;
+    for (i = 0, len = ref.length; i < len; i++) {
+      dropSpot = ref[i];
+      if (isInside(vm.currentDraggable.midPoint, dropSpot)) {
+        if (!dropSpot.isActive) {
+          vm.setCurrentDroppable(dropSpot);
+          dropSpot.activate();
+          vm.trigger('drag-enter', vm.getEvent("drag"));
         }
-      ],
-      link: function(scope, element, attrs, ngDragAndDrop) {
-        var bindEvents, moveEvents, onMove, onRelease, releaseEvents, unbindEvents;
-        moveEvents = "touchmove mousemove";
-        releaseEvents = "touchend mouseup";
-        ngDragAndDrop.setDragAndDropElement(element);
-        bindEvents = function() {
-          $document.on(moveEvents, onMove);
-          $document.on(releaseEvents, onRelease);
-          ngDragAndDrop.on("drag-start", function() {
-            return element.addClass("dragging");
-          });
-          return ngDragAndDrop.on("drag-end", function() {
-            return element.removeClass("dragging");
-          });
-        };
-        unbindEvents = function() {
-          $document.off(moveEvents, onMove);
-          return $document.off(releaseEvents, onRelease);
-        };
-        onRelease = function(e) {
-          var draggable, dropSpot;
-          draggable = ngDragAndDrop.getCurrentDraggable();
-          dropSpot = ngDragAndDrop.getCurrentDroppable();
-          if (draggable) {
-            element.addClass("drag-return");
-            setTimeout(function() {
-              return element.removeClass("drag-return");
-            }, 500);
-            ngDragAndDrop.fireCallback('drag-end', e);
-            draggable.deactivate();
-            if (dropSpot && !dropSpot.isFull) {
-              ngDragAndDrop.fireCallback('item-assigned', e);
-              draggable.assignTo(dropSpot);
-              dropSpot.itemDropped(draggable);
-            } else if (dropSpot && dropSpot.isFull && scope.enableSwap) {
-              dropSpot.items[0].returnToStartPosition();
-              dropSpot.items[0].removeFrom(dropSpot);
-              ngDragAndDrop.fireCallback('item-assigned', e);
-              draggable.assignTo(dropSpot);
-              dropSpot.itemDropped(draggable);
-              ngDragAndDrop.fireCallback('item-removed', e);
-            } else {
-              draggable.isAssigned = false;
-              if (scope.fixedPositions) {
-                draggable.returnToStartPosition();
-              }
-            }
-            if (dropSpot) {
-              dropSpot.deactivate();
-            }
-            return ngDragAndDrop.setCurrentDraggable(null);
-          }
-        };
-        onMove = function(e) {
-          var draggable;
-          draggable = ngDragAndDrop.getCurrentDraggable();
-          if (draggable) {
-            ngDragAndDrop.fireCallback('drag', e);
-            if (e.touches && e.touches.length === 1) {
-              draggable.updateOffset(e.touches[0].clientX, e.touches[0].clientY);
-            } else {
-              draggable.updateOffset(e.clientX, e.clientY);
-            }
-            return ngDragAndDrop.checkForIntersection();
-          }
-        };
-        bindEvents();
-        return ngDragAndDrop.trigger("ready");
+      } else {
+        if (dropSpot.isActive) {
+          this.setCurrentDroppable(null);
+          dropSpot.deactivate();
+          vm.trigger('drag-leave', vm.getEvent("drag"));
+        }
+      }
+    }
+    return vm;
+  };
+  vm.addDroppable = function(droppable) {
+    vm.droppables.push(droppable);
+    return vm;
+  };
+  vm.addDraggable = function(draggable) {
+    vm.draggables.push(draggable);
+    return vm;
+  };
+  vm.addClone = function(el) {
+    return this.getDragAndDropElement().append(el);
+  };
+  return vm;
+};
+
+DragAndDropController.$inject = ["$scope"];
+
+angular.module("onlea.components.dnd").controller("DragAndDropController", DragAndDropController);
+
+var dragAndDropDirective;
+
+dragAndDropDirective = function($document) {
+  var linkFunction;
+  linkFunction = function(scope, element, attrs, dnd) {
+    var moveEvents, onMove, onRelease, releaseEvents;
+    moveEvents = "touchmove mousemove";
+    releaseEvents = "touchend mouseup";
+    dnd.setDragAndDropElement(element);
+    dnd.setFixedPositions(scope.fixedPositions);
+    $document.on(moveEvents, onMove);
+    $document.on(releaseEvents, onRelease);
+    dnd.on("drag-start", function() {
+      return $scope.onDragStart;
+    });
+    dnd.on("drag-end", function() {
+      return $scope.onDragEnd;
+    });
+    dnd.on("drag", scope.onDrag);
+    dnd.on("item-assigned", scope.onItemPlaced);
+    dnd.on("item-removed", scope.onItemRemoved);
+    dnd.on("drag-leave", scope.onDragLeave);
+    dnd.on("drag-enter", scope.onDragEnter);
+    dnd.on("drag-start", function() {
+      return element.addClass("dragging");
+    });
+    dnd.on("drag-end", function() {
+      element.removeClass("dragging");
+      element.addClass("drag-return");
+      return setTimeout(function() {
+        return element.removeClass("drag-return");
+      }, 500);
+    });
+    onRelease = function(e) {
+      if (dnd.getCurrentDraggable()) {
+        return dnd.trigger("drag-end", e);
       }
     };
-  }
-]);
-
-module.directive('dragItem', [
-  '$window', '$document', '$compile', function($window, $document, $compile) {
-    return {
-      restrict: 'EA',
-      require: '^dragAndDrop',
-      scope: {
-        x: "@",
-        y: "@",
-        dropTo: "@",
-        dragId: "@",
-        dragEnabled: "=",
-        dragData: "=",
-        clone: "=",
-        lockHorizontal: "=",
-        lockVertical: "="
-      },
-      link: function(scope, element, attrs, ngDragAndDrop) {
-        var bindEvents, cloneEl, eventOffset, height, init, onPress, pressEvents, setClonePosition, startPosition, transformEl, unbindEvents, updateDimensions, w, width;
-        cloneEl = width = height = startPosition = transformEl = eventOffset = pressEvents = w = null;
-        updateDimensions = function() {
-          scope.left = scope.x + element[0].offsetLeft;
-          scope.right = scope.left + width;
-          scope.top = scope.y + element[0].offsetTop;
-          scope.bottom = scope.top + height;
-          scope.midPoint = [scope.left + width / 2, scope.top + height / 2];
-          if (scope.lockVertical) {
-            scope.percent = 100 * (scope.left + element[0].clientWidth / 2) / element.parent()[0].clientWidth;
-            return scope.percent = Math.min(100, Math.max(0, scope.percent));
-          }
-        };
-        setClonePosition = function() {
-          var elemRect, leftOffset, topOffset;
-          elemRect = element[0].getBoundingClientRect();
-          leftOffset = elemRect.left + eventOffset[0];
-          topOffset = elemRect.top + eventOffset[1];
-          return scope.updateOffset(leftOffset, topOffset);
-        };
-        scope.setPercentPostion = function(xPercent, yPercent) {
-          var newX, newY;
-          newY = (element.parent()[0].clientHeight * (yPercent / 100)) - element[0].clientHeight / 2;
-          newX = (element.parent()[0].clientWidth * (xPercent / 100)) - element[0].clientWidth / 2;
-          return scope.setPosition(newX, newY);
-        };
-        scope.setPosition = function(x, y) {
-          scope.x = scope.lockHorizontal ? 0 : x;
-          scope.y = scope.lockVertical ? 0 : y;
-          updateDimensions();
-          return transformEl.css({
-            "transform": "translate(" + scope.x + "px, " + scope.y + "px)",
-            "-webkit-transform": "translate(" + scope.x + "px, " + scope.y + "px)",
-            "-ms-transform": "translate(" + scope.x + "px, " + scope.y + "px)"
-          });
-        };
-        scope.updateOffset = function(x, y) {
-          if (scope.clone) {
-            return scope.setPosition(x - (eventOffset[0] + element[0].offsetLeft), y - (eventOffset[1] + element[0].offsetTop));
-          } else {
-            return scope.setPosition(x - (eventOffset[0] + element[0].offsetLeft), y - (eventOffset[1] + element[0].offsetTop));
-          }
-        };
-        scope.returnToStartPosition = function() {
-          return scope.setPosition(startPosition[0], startPosition[1]);
-        };
-        scope.assignTo = function(dropSpot) {
-          scope.dropSpots.push(dropSpot);
-          scope.isAssigned = true;
-          if (dropSpot.dropId) {
-            return element.addClass("in-" + dropSpot.dropId);
-          }
-        };
-        scope.removeFrom = function(dropSpot) {
-          var index;
-          index = scope.dropSpots.indexOf(dropSpot);
-          if (index > -1) {
-            if (dropSpot.dropId) {
-              element.removeClass("in-" + dropSpot.dropId);
-            }
-            scope.dropSpots.splice(index, 1);
-            if (scope.dropSpots.length < 1) {
-              scope.isAssigned = false;
-            }
-            return dropSpot.removeItem(scope);
-          }
-        };
-        scope.addClass = function(className) {
-          return element.addClass(className);
-        };
-        scope.removeClass = function(className) {
-          return element.removeClass(className);
-        };
-        scope.toggleClass = function(className) {
-          if (element.hasClass(className)) {
-            return element.removeClass(className);
-          } else {
-            return element.addClass(className);
-          }
-        };
-        scope.activate = function() {
-          element.addClass("drag-active");
-          return scope.isDragging = true;
-        };
-        scope.deactivate = function() {
-          eventOffset = [0, 0];
-          if (scope.clone) {
-            cloneEl.removeClass("clone-active");
-          }
-          element.removeClass("drag-active");
-          return scope.isDragging = false;
-        };
-        bindEvents = function() {
-          element.on(pressEvents, onPress);
-          return w.bind("resize", updateDimensions);
-        };
-        unbindEvents = function() {
-          element.off(pressEvents, onPress);
-          return w.unbind("resize", updateDimensions);
-        };
-        onPress = function(e) {
-          var dropSpot, elemRect, i, len, ref, spot;
-          if (!scope.dragEnabled) {
-            return;
-          }
-          if (e.touches && e.touches.length === 1) {
-            eventOffset = [e.touches[0].clientX - scope.left, e.touches[0].clientY - scope.top];
-          } else {
-            elemRect = element[0].getBoundingClientRect();
-            eventOffset = [e.clientX - elemRect.left, e.clientY - elemRect.top];
-          }
-          if (scope.clone) {
-            scope.returnToStartPosition();
-            cloneEl.addClass("clone-active");
-            setClonePosition();
-          }
-          ngDragAndDrop.setCurrentDraggable(scope);
-          scope.activate();
-          scope.isAssigned = false;
-          ngDragAndDrop.checkForIntersection();
-          dropSpot = ngDragAndDrop.getCurrentDroppable();
-          ref = scope.dropSpots;
-          for (i = 0, len = ref.length; i < len; i++) {
-            spot = ref[i];
-            scope.removeFrom(spot);
-            ngDragAndDrop.fireCallback('item-removed', e);
-          }
-          return e.preventDefault();
-        };
-        init = function() {
-          var testing;
-          if (scope.dragId) {
-            element.addClass(scope.dragId);
-          }
-          eventOffset = [0, 0];
-          width = element[0].offsetWidth;
-          height = element[0].offsetHeight;
-          scope.dropSpots = [];
-          scope.isAssigned = false;
-          if (scope.x == null) {
-            scope.x = 0;
-          }
-          if (scope.y == null) {
-            scope.y = 0;
-          }
-          startPosition = [scope.x, scope.y];
-          pressEvents = "touchstart mousedown";
-          w = angular.element($window);
-          updateDimensions();
-          ngDragAndDrop.addDraggable(scope);
-          bindEvents();
-          if (scope.dragData) {
-            angular.extend(scope, scope.dragData);
-          }
-          if (scope.clone) {
-            scope[scope.dragData.key] = scope.dragData.value;
-            testing = $compile(angular.element("<div>" + element.html() + "</div>"))(scope);
-            cloneEl = testing;
-            cloneEl.addClass("clone");
-            cloneEl.addClass(element.attr("class"));
-            angular.element(ngDragAndDrop.getDragAndDropElement()).append(cloneEl);
-            transformEl = cloneEl;
-          } else {
-            transformEl = element;
-          }
-          scope.returnToStartPosition();
-          scope.$emit('drag-ready', scope);
-          return scope.$on('$destroy', function() {
-            return unbindEvents();
-          });
-        };
-        return ngDragAndDrop.on("ready", init);
+    onMove = function(e) {
+      if (dnd.getCurrentDraggable()) {
+        return dnd.trigger("drag", e);
       }
     };
-  }
-]);
+    scope.$on("$destroy", function() {
+      $document.off(moveEvents, onMove);
+      return $document.off(releaseEvents, onRelease);
+    });
+    return dnd.trigger("ready");
+  };
+  return {
+    restrict: 'AE',
+    scope: {
+      onItemPlaced: "&",
+      onItemRemoved: "&",
+      onDrag: "&",
+      onDragStart: "&",
+      onDragEnd: "&",
+      onDragEnter: "&",
+      onDragLeave: "&",
+      enableSwap: "=",
+      fixedPositions: "="
+    },
+    require: 'dragAndDrop',
+    controller: DragAndDropController,
+    controllerAs: 'dnd',
+    link: linkFunction
+  };
+};
 
-module.directive('dropSpot', [
+dragAndDropDirective.$inject = ['$document'];
+
+angular.module("onlea.components.dnd").directive('dragAndDrop', dragAndDropDirective);
+
+var DragItemController, dragItemDirective;
+
+DragItemController = function() {
+  var el, elRect, startPosition, state, transformEl, vm;
+  el = null;
+  state = {
+    locked: {
+      horizontal: false,
+      vertical: false
+    }
+  };
+  elRect = null;
+  startPosition = [0, 0];
+  transformEl = null;
+  vm = this;
+  vm.dropSpots = [];
+  vm.isAssigned = false;
+  vm.setDragId = function() {};
+  vm.setDragData = function() {};
+  vm.setStartPosition = function(x, y) {
+    return startPosition = [x, y];
+  };
+  vm.setDragItemElement = function(el) {
+    el = transformEl = el;
+    elRect = el[0].getBoundingClientRect();
+    return vm;
+  };
+  vm.setTransformElement = function(el) {
+    return transformEl = el;
+  };
+  vm.setDimensions = function() {
+    vm.top = vm.y + elRect.top;
+    vm.left = vm.x + elRect.left;
+    vm.bottom = vm.top + elRect.height;
+    vm.right = vm.left + elRect.width;
+    vm.midPoint = [(vm.left + vm.right) / 2, (vm.top + vm.bottom) / 2];
+    if (vm.isVerticallyLocked()) {
+      vm.percent = 100 * vm.midPoint[0] / el.parent()[0].clientWidth;
+      vm.percent = Math.min(100, Math.max(0, scope.percent));
+    }
+    return vm;
+  };
+  vm.lockAxis = function(axis) {
+    if (axis === "horizontal" || "x") {
+      vm.state.locked.horizontal = true;
+    }
+    if (axis === "vertical" || "y") {
+      vm.state.locked.vertical = true;
+    }
+    return vm;
+  };
+  vm.unlockAxis = function(axis) {
+    if (axis === "horizontal" || "x") {
+      vm.state.locked.horizontal = false;
+    }
+    if (axis === "vertical" || "y") {
+      vm.state.locked.vertical = false;
+    }
+    return vm;
+  };
+  vm.isVerticallyLocked = function() {
+    return vm.state.locked.vertical;
+  };
+  vm.isHorizontallyLocked = function() {
+    return vm.state.locked.horizontal;
+  };
+  vm.setPercentPostion = function(xPercent, yPercent) {
+    var newX, newY;
+    newY = (el.parent()[0].clientHeight * (yPercent / 100)) - el[0].clientHeight / 2;
+    newX = (el.parent()[0].clientWidth * (xPercent / 100)) - el[0].clientWidth / 2;
+    vm.setPosition(newX, newY);
+    return vm;
+  };
+  vm.setPosition = function(x, y) {
+    vm.x = vm.isHorizontallyLocked() ? 0 : x;
+    vm.y = vm.isVerticallyLocked() ? 0 : y;
+    vm.setDimensions();
+    transformEl.css({
+      "transform": "translate(" + vm.x + "px, " + vm.y + "px)",
+      "-webkit-transform": "translate(" + vm.x + "px, " + vm.y + "px)",
+      "-ms-transform": "translate(" + vm.x + "px, " + vm.y + "px)"
+    });
+    return vm;
+  };
+  vm.updateOffset = function(x, y) {
+    vm.setPosition(x - (eventOffset[0] + el[0].offsetLeft), y - (eventOffset[1] + el[0].offsetTop));
+    return vm;
+  };
+  vm.returnToStartPosition = function() {
+    return scope.setPosition(startPosition[0], startPosition[1]);
+  };
+  vm.assignTo = function(dropSpot) {
+    if (dropSpot) {
+      vm.dropSpots.push(dropSpot);
+      vm.isAssigned = true;
+      if (dropSpot.dropId) {
+        return el.addClass("in-" + dropSpot.dropId);
+      }
+    }
+  };
+  vm.removeFrom = function(dropSpot) {
+    var index;
+    index = scope.dropSpots.indexOf(dropSpot);
+    if (index > -1) {
+      if (dropSpot.dropId) {
+        el.removeClass("in-" + dropSpot.dropId);
+      }
+      scope.dropSpots.splice(index, 1);
+      if (scope.dropSpots.length < 1) {
+        scope.isAssigned = false;
+      }
+      return dropSpot.removeItem(scope);
+    }
+  };
+  vm.removeFromAll = function() {
+    var i, len, ref, results, spot;
+    ref = scope.dropSpots;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      spot = ref[i];
+      results.push(scope.removeFrom(spot));
+    }
+    return results;
+  };
+  vm.addClass = el.addClass;
+  vm.removeClass = el.removeClass;
+  vm.toggleClass = el.toggleClass;
+  vm.activate = function() {
+    el.addClass("drag-active");
+    return vm.isDragging = true;
+  };
+  vm.deactivate = function() {
+    var eventOffset;
+    eventOffset = [0, 0];
+    if (vm.clone) {
+      cloneEl.removeClass("clone-active");
+    }
+    el.removeClass("drag-active");
+    return vm.isDragging = false;
+  };
+  return vm;
+};
+
+dragItemDirective = function($window, $document, $compile) {
+  return {
+    restrict: 'EA',
+    require: ['^dragAndDrop', 'dragItem'],
+    controller: DragItemController,
+    controllerAs: "drag",
+    scope: {
+      x: "@",
+      y: "@",
+      dropTo: "@",
+      dragId: "@",
+      dragEnabled: "=",
+      dragData: "=",
+      clone: "=",
+      lockHorizontal: "=",
+      lockVertical: "="
+    },
+    link: function(scope, element, attrs, ctrls) {
+      var createClone, dnd, drag, onPress, pressEvents, transformEl;
+      onPress = function(e) {
+        if (scope.dragEnabled) {
+          dnd.setCurrentDraggable(drag);
+          return dnd.trigger("drag-start", e);
+        }
+      };
+      createClone = function() {
+        var cloneEl;
+        cloneEl = $compile(angular.element("<div>" + element.html() + "</div>"))(scope);
+        cloneEl.addClass("clone");
+        cloneEl.addClass(element.attr("class"));
+        return cloneEl;
+      };
+      dnd = ctrls[0];
+      drag = ctrls[1];
+      pressEvents = "touchstart mousedown";
+      drag.setStartPosition(scope.x, scope.y);
+      dnd.addDraggable(drag);
+      drag.setDragId(scope.dragId);
+      drag.setDragData(scope.dragData);
+      element.on(pressEvents, onPress);
+      $window.addEventListener("resize", drag.setDimensions);
+      if (scope.clone) {
+        transformEl = createClone();
+        dnd.addClone(transformEl);
+        drag.setTransformElement(transformEl);
+      }
+      drag.returnToStartPosition();
+      scope.$on('$destroy', function() {
+        element.off(pressEvents, onPress);
+        return $window.removeEventListener("resize", drag.setDimensions);
+      });
+      return dnd.on("ready", init);
+    }
+  };
+};
+
+dragItemDirective.$inject('$window', '$document', '$compile');
+
+angular.module("onlea.components.dnd").directive('dragItem', dragItemDirective);
+
+var dropSpotDirective;
+
+dropSpotDirective = [
   '$window', function($window) {
     return {
       restrict: 'AE',
@@ -569,4 +646,4 @@ module.directive('dropSpot', [
       }
     };
   }
-]);
+];

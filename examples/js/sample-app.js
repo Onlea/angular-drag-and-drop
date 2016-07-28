@@ -1,6 +1,6 @@
 var app;
 
-app = angular.module('example', ['laneolson.ui.dragdrop']);
+app = angular.module('example', ['onlea.components.dnd']);
 
 app.controller("ExampleController", [
   '$scope', function($scope) {

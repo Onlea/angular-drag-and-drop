@@ -10,7 +10,13 @@ browserSync       = require 'browser-sync'
 
 config =
   source:
-    coffee: "./src/app/angular-drag-and-drop.coffee"
+    coffee: [
+      "./src/app/drag-and-drop.module.coffee"
+      "./src/app/drag-and-drop.controller.coffee"
+      "./src/app/drag-and-drop.directive.coffee"
+      "./src/app/drag-item.directive.coffee"
+      "./src/app/drop-spot.directive.coffee"
+    ]
     less: "./src/less/**/*.less"
   target: "./build"
   demo: "./examples"

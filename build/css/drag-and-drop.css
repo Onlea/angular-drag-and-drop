@@ -1,7 +1,7 @@
 .drag-return drag-item,
 .drag-return .drag-item {
   -webkit-transition: all ease-in-out 0.5s;
-          transition: all ease-in-out 0.5s;
+  transition: all ease-in-out 0.5s;
 }
 drag-item,
 [drag-item],
@@ -26,7 +26,7 @@ drag-item:active,
       -ms-transform: scale(1);
           transform: scale(1);
   -webkit-transition: all 0.1s ease-in-out;
-          transition: all 0.1s ease-in-out;
+  transition: all 0.1s ease-in-out;
 }
 .drag-active {
   z-index: 20;
