@@ -99,6 +99,32 @@ DragAndDropController = ($scope) ->
     vm.currentDroppable = droppable
     return vm
 
+  handlePress = (state) ->
+    draggable = state.draggable
+
+    if e.touches and e.touches.length is 1
+      eventOffset = [
+        (e.touches[0].clientX-scope.left)
+        (e.touches[0].clientY-scope.top)
+      ]
+    else
+      elemRect = element[0].getBoundingClientRect()
+      # event offset is the number of pixels away from the drag item
+      eventOffset = [e.clientX - draggable.left, e.clientY - draggable.top]
+    if scope.clone
+      scope.returnToStartPosition()
+      cloneEl.addClass "clone-active"
+      vm.updateOffset vm.left, vm.top
+    ngDragAndDrop.setCurrentDraggable scope
+    scope.activate()
+    scope.isAssigned = false
+    ngDragAndDrop.checkForIntersection()
+    dropSpot = ngDragAndDrop.getCurrentDroppable()
+    for spot in scope.dropSpots
+      scope.removeFrom spot
+      ngDragAndDrop.fireCallback 'item-removed', e
+    e.preventDefault()
+
   handleMove = (state) ->
     draggable = state.draggable
     e = state.dragEvent

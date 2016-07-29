@@ -5,6 +5,7 @@ DragItemController = ->
     locked:
       horizontal: false
       vertical: false
+    clone: false
   elRect = null
   startPosition = [0,0]
   transformEl = null
@@ -17,8 +18,6 @@ DragItemController = ->
 
   vm.setDragData = () ->
 
-
-
   vm.setStartPosition = (x,y) ->
     startPosition = [x,y]
 
@@ -27,8 +26,12 @@ DragItemController = ->
     elRect = el[0].getBoundingClientRect()
     return vm
 
-  vm.setTransformElement = (el) ->
+  vm.setClone = (el) ->
+    state.clone = true
     transformEl = el
+
+  vm.getTransformElement = ->
+    return transformEl
 
   # update the element rectangle based on the x / y values
   vm.setDimensions = () ->
@@ -122,10 +125,6 @@ DragItemController = ->
     for spot in scope.dropSpots
       scope.removeFrom spot
 
-  vm.addClass = el.addClass
-  vm.removeClass = el.removeClass
-  vm.toggleClass = el.toggleClass
-
   # sets dragging status on the drag item
   vm.activate = ->
     el.addClass "drag-active"
@@ -134,10 +133,13 @@ DragItemController = ->
   # removes dragging status and resets the event offset
   vm.deactivate = () ->
     eventOffset = [0, 0]
-    if vm.clone
-      cloneEl.removeClass "clone-active"
+    if state.clone
+      transformEl.removeClass "clone-active"
     el.removeClass "drag-active"
     vm.isDragging = false
+
+  vm.destroy = ->
+
 
   return vm
 
@@ -178,31 +180,35 @@ dragItemDirective = ($window, $document, $compile) ->
     dnd = ctrls[0]
     drag = ctrls[1]
 
-    pressEvents = "touchstart mousedown"
-    drag.setStartPosition scope.x, scope.y
-    dnd.addDraggable drag
-    drag.setDragId scope.dragId
-    drag.setDragData scope.dragData
+    dnd.on "ready", ->
+      drag.setProperties drag
+      # drag.setStartPosition scope.x, scope.y
+      # drag.setDragId scope.dragId
+      # drag.setDragData scope.dragData
 
-    # bind press and window resize to the drag item
-    element.on pressEvents, onPress
-    $window.addEventListener "resize", drag.setDimensions
+      dnd.addDraggable drag
 
-    # create the clone
-    if scope.clone
-      transformEl = createClone()
-      dnd.addClone(transformEl)
-      drag.setTransformElement(transformEl)
 
-    # set the start position of the drag item
-    drag.returnToStartPosition()
+      pressEvents = "touchstart mousedown"
 
-    scope.$on '$destroy', ->
-      element.off pressEvents, onPress
-      $window.removeEventListener "resize", drag.setDimensions
+      # bind press and window resize to the drag item
+      element.on pressEvents, onPress
+      $window.addEventListener "resize", drag.setDimensions
 
-    # initialization
-    dnd.on "ready", init
+      # create the clone
+      if scope.clone
+        transformEl = createClone()
+        dnd.addClone(transformEl)
+        drag.setClone(transformEl)
+
+      # set the start position of the drag item
+      drag.returnToStartPosition()
+
+      scope.$on '$destroy', ->
+        drag.destroy()
+        element.off pressEvents, onPress
+        $window.removeEventListener "resize", drag.setDimensions
+
 
 dragItemDirective.$inject '$window', '$document', '$compile'
 
