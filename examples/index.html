@@ -120,36 +120,14 @@
 
       <div ng-app="example">
         <div ng-controller="ExampleController">
-          <div drag-and-drop class="drag-container"
-            on-item-placed="logThis('item assigned', draggable, droppable)"
-            on-item-removed="logThis('item removed', draggable, droppable)"
-            on-drag-start="logThis('started dragging', draggable)"
-            on-drag-end="logThis('done dragging', draggable, droppable)"
-            on-drag-enter="logThis('dragged over drop spot', draggable, droppable)"
-            on-drag-leave="logThis('dragged out of drop spot', draggable, droppable)"
-            >
 
-            <div drag-item drag-enabled="true" drag-data="{ 'answer': 'item one' }" class="drag-item drag-transform" drag-id="item-one" clone="true">
-                <p>Clone</p>
+            <div draggable class="drag-item">
+                <p>Draggable</p>
             </div>
 
-            <div drag-item drag-enabled="true" drag-data="{ 'answer': 'item two' }" class="drag-item drag-transform" drag-id="item-two" drop-to="center" lock-vertical="true">
-                <p>Vertical postion locked</p>
+            <div droppable class="drop-spot">
             </div>
 
-            <div drag-item drag-enabled="true" drag-data="{ 'answer': 'item three' }" class="drag-item drag-transform" drag-id="item-three">
-                <p>Item Three</p>
-            </div>
-
-            <div drag-item drag-enabled="true" drag-data="{ 'answer': 'item four' }" class="drag-item drag-transform" drag-id="item-four" drop-to="center">
-                <p>Item Four</p>
-            </div>
-
-            <drop-spot max-items="3" class="drop-spot" drop-id="drop-one">
-              <p>Drop Here</p>
-            </drop-spot>
-
-          </drag-and-drop>
         </div>
       </div>
 

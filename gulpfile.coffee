@@ -12,10 +12,9 @@ config =
   source:
     coffee: [
       "./src/app/drag-and-drop.module.coffee"
-      "./src/app/drag-and-drop.controller.coffee"
-      "./src/app/drag-and-drop.directive.coffee"
-      "./src/app/drag-item.directive.coffee"
-      "./src/app/drop-spot.directive.coffee"
+      "./src/app/drag-and-drop.service.coffee"
+      "./src/app/draggable.directive.coffee"
+      "./src/app/droppable.directive.coffee"
     ]
     less: "./src/less/**/*.less"
   target: "./build"
