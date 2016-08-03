@@ -7,7 +7,7 @@ angular.module("onlea.components.dnd", []);
 var DragAndDropService;
 
 DragAndDropService = function($log) {
-  var addAssignment, addDraggable, addDroppable, checkForIntersection, draggables, droppables, getCurrentDraggable, getCurrentDroppable, getEvent, getState, handlers, isDragging, isInside, isIntersecting, onEvent, options, removeAssignment, setCurrentDraggable, setCurrentDroppable, setEvent, state, trigger;
+  var addAssignment, addDraggable, addDroppable, checkForIntersection, draggables, droppables, getCurrentDraggable, getCurrentDroppable, getEvent, getState, handlers, isDragging, isInside, isIntersecting, onEvent, options, removeAssignment, setCurrentDraggable, setCurrentDroppable, setEvent, state, trigger, uuid;
   handlers = [];
   draggables = [];
   droppables = [];
@@ -21,6 +21,14 @@ DragAndDropService = function($log) {
     dragging: false,
     ready: false,
     events: {}
+  };
+  uuid = function() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r, v;
+      r = Math.random() * 16 | 0;
+      v = c === 'x' ? r : r & 0x3 | 0x8;
+      return v.toString(16);
+    });
   };
 
   /*
@@ -258,6 +266,7 @@ DragAndDropService = function($log) {
     }
   });
   return {
+    uuid: uuid,
     on: onEvent,
     trigger: trigger,
     getState: getState,
@@ -281,8 +290,8 @@ angular.module("onlea.components.dnd").factory("DragAndDrop", DragAndDropService
  */
 var DraggableController, draggableDirective;
 
-DraggableController = function(DragAndDrop) {
-  var current, draggableEl, getElementRect, getEventCoordinates, setElementTranslate, start, vm;
+DraggableController = function($document, $compile, DragAndDrop) {
+  var createClone, current, draggableEl, getElementRect, getEventCoordinates, setElementTranslate, start, vm;
   draggableEl = null;
   vm = this;
   start = {
@@ -293,6 +302,17 @@ DraggableController = function(DragAndDrop) {
     rect: {},
     droppables: [],
     event: null
+  };
+
+  /*
+   * gets the screen coordinates from a mouse or touch event
+   */
+  createClone = function() {
+    var cloneEl;
+    cloneEl = $compile(angular.element("<div>" + draggableEl.html() + "</div>"))(vm);
+    cloneEl.addClass("clone");
+    cloneEl.addClass(draggableEl.attr("class"));
+    return $document.find("body").append(cloneEl);
   };
 
   /*
@@ -333,9 +353,20 @@ DraggableController = function(DragAndDrop) {
    * intitalizes the draggable
    */
   vm.init = function(element, options) {
+    if (options == null) {
+      options = {};
+    }
     console.log("draggable init:", element, options);
     draggableEl = element;
-    return current.rect = getElementRect(draggableEl);
+    current.rect = getElementRect(draggableEl);
+    if (options.id) {
+      vm.id = options.id;
+    } else {
+      vm.id = DragAndDrop.uuid();
+    }
+    if (options.clone) {
+      return createClone();
+    }
   };
 
   /*
@@ -410,15 +441,23 @@ DraggableController = function(DragAndDrop) {
   return vm;
 };
 
-DraggableController.$inject = ["DragAndDrop"];
+DraggableController.$inject = ["$document", "$compile", "DragAndDrop"];
 
 draggableDirective = function($window, $document, $compile, DragAndDrop) {
   var linkFunction;
   linkFunction = function(scope, element, attrs, draggable) {
-    var moveEvents, onMove, onPress, onRelease, pressEvents, releaseEvents;
+    var moveEvents, onMove, onPress, onRelease, pressEvents, processAttrs, releaseEvents;
     pressEvents = "touchstart mousedown";
     moveEvents = "touchmove mousemove";
     releaseEvents = "touchend mouseup";
+    processAttrs = function() {
+      var options;
+      options = {};
+      if (attrs.clone) {
+        options.clone = true;
+      }
+      return options;
+    };
 
     /*
      * handler for when the draggable is released
@@ -460,12 +499,9 @@ draggableDirective = function($window, $document, $compile, DragAndDrop) {
       $document.on(moveEvents, onMove);
       return $document.on(releaseEvents, onRelease);
     };
-    draggable.init(element, scope);
+    draggable.init(element, processAttrs());
     DragAndDrop.addDraggable(draggable);
-    element.on(pressEvents, onPress);
-    return $window.addEventListener("resize", function(e) {
-      return draggable.updateDimensions();
-    });
+    return element.on(pressEvents, onPress);
   };
   return {
     restrict: "A",
@@ -497,7 +533,12 @@ DroppableController = function($log, DragAndDrop) {
   vm.init = function(element, options) {
     $log.debug("droppable: init", element, options);
     droppableEl = element;
-    return vm.updateDimensions();
+    vm.updateDimensions();
+    if (options.id) {
+      return vm.id = options.id;
+    } else {
+      return vm.id = DragAndDrop.uuid();
+    }
   };
 
   /*

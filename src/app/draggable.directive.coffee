@@ -1,7 +1,7 @@
 ###
 # Draggable Directive Controller
 ###
-DraggableController = (DragAndDrop) ->
+DraggableController = ($document, $compile, DragAndDrop) ->
 
   draggableEl = null # the element to drag
   vm = this # view model for the controller
@@ -16,6 +16,15 @@ DraggableController = (DragAndDrop) ->
     rect: {}
     droppables: []
     event: null
+
+  ###
+  # gets the screen coordinates from a mouse or touch event
+  ###
+  createClone = ->
+    cloneEl = $compile(angular.element("<div>"+draggableEl.html()+"</div>"))(vm)
+    cloneEl.addClass "clone"
+    cloneEl.addClass draggableEl.attr "class"
+    $document.find("body").append cloneEl
 
   ###
   # gets the screen coordinates from a mouse or touch event
@@ -48,10 +57,14 @@ DraggableController = (DragAndDrop) ->
   ###
   # intitalizes the draggable
   ###
-  vm.init = (element, options) ->
+  vm.init = (element, options = {}) ->
     console.log "draggable init:", element, options
     draggableEl = element
     current.rect = getElementRect draggableEl
+    if options.id then vm.id = options.id else vm.id = DragAndDrop.uuid()
+    if options.clone
+      createClone()
+
 
   ###
   # handler for when the drag starts
@@ -119,7 +132,7 @@ DraggableController = (DragAndDrop) ->
 
   return vm
 
-DraggableController.$inject = [ "DragAndDrop" ]
+DraggableController.$inject = [ "$document", "$compile", "DragAndDrop" ]
 
 draggableDirective = ($window, $document, $compile, DragAndDrop) ->
 
@@ -128,6 +141,11 @@ draggableDirective = ($window, $document, $compile, DragAndDrop) ->
     pressEvents = "touchstart mousedown"
     moveEvents = "touchmove mousemove"
     releaseEvents = "touchend mouseup"
+
+    processAttrs = ->
+      options = {}
+      if attrs.clone then options.clone = true
+      return options
 
     ###
     # handler for when the draggable is released
@@ -167,11 +185,9 @@ draggableDirective = ($window, $document, $compile, DragAndDrop) ->
       $document.on releaseEvents, onRelease
 
     # initialize the draggable
-    draggable.init element, scope
+    draggable.init element, processAttrs()
     DragAndDrop.addDraggable draggable
     element.on pressEvents, onPress
-    $window.addEventListener "resize", (e) ->
-      draggable.updateDimensions()
 
   # return the directive object
   return {

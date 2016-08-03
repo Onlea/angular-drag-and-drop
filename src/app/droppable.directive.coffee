@@ -15,6 +15,8 @@ DroppableController = ($log, DragAndDrop) ->
     $log.debug "droppable: init", element, options
     droppableEl = element
     vm.updateDimensions()
+    if options.id then vm.id = options.id else vm.id = DragAndDrop.uuid()
+
 
   ###
   # update the dimensions for the droppable area

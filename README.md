@@ -7,33 +7,12 @@ Customizable drag and drop behaviour for Angular.
 
 ### Bower
     bower install angular-drag-and-drop-directives
-    
+
 Or download the files from github, then:
-
-**In your HTML:**
-
-  1. Add `angular-drag-and-drop.js` 
-  2. Add `angular-drag-and-drop.css`
-  3. Add required markup
-
-    ```html
-    <drag-and-drop>
-
-      <drag-item>
-          <p>Anything in here</p>
-          <p>will be draggable</p>
-      </drag-item>
-
-      <drop-spot>
-        <p>Drop Here</p>
-      </drop-spot>
-
-    </drag-and-drop>
-    ```
 
 **In your Angular module:**
 
-  1. Add `"laneolson.ui.dragdrop"` as a dependency to the module. 
+  1. Add `"laneolson.ui.dragdrop"` as a dependency to the module.
   2. In your controller, add functions for handling various events in the drag and drop.
 
 ## Customizing
