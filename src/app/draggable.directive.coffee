@@ -1,7 +1,7 @@
 ###
 # Draggable Directive Controller
 ###
-DraggableController = ($document, $compile, DragAndDrop) ->
+DraggableController = ($log, $document, $compile, DragAndDrop) ->
 
   draggableEl = null # the element to drag
   vm = this # view model for the controller
@@ -10,23 +10,46 @@ DraggableController = ($document, $compile, DragAndDrop) ->
   start =
     rect: {}
     event: null
+    translate: {x:0, y:0}
 
   # object for storing the current state when dragging
   current =
     rect: {}
     droppables: []
     event: null
+    translate: {x:0, y:0}
 
-  ###
+  original =
+    rect: {}
+
+  getBodyOffset = (elem) ->
+    bodyRect = document.body.getBoundingClientRect()
+    elemRect = elem[0].getBoundingClientRect()
+    offset =
+      top: elemRect.top - bodyRect.top
+      left: elemRect.left - bodyRect.left
+
+  ###*
   # gets the screen coordinates from a mouse or touch event
   ###
   createClone = ->
     cloneEl = $compile(angular.element("<div>"+draggableEl.html()+"</div>"))(vm)
     cloneEl.addClass "clone"
     cloneEl.addClass draggableEl.attr "class"
+    # element is added to body
+    offset = getBodyOffset draggableEl
+    cloneEl.css
+      position: "absolute"
+      top: offset.top + "px"
+      left: offset.left + "px"
     $document.find("body").append cloneEl
+    # element should be appended as sibling
+    draggableEl = cloneEl
 
-  ###
+  positionClone = ->
+
+
+  ###*
   # gets the screen coordinates from a mouse or touch event
   ###
   getEventCoordinates = (e) ->
@@ -35,14 +58,14 @@ DraggableController = ($document, $compile, DragAndDrop) ->
     else
       return [ e.clientX, e.clientY ]
 
-  ###
+  ###*
   # gets the bounding DOMRect of an element
   # @param {jQlite Element} el - jquery (lite) wrapped element
   # @return {DOMRect} - screen boundary of element
   ###
   getElementRect = (el) -> el[0].getBoundingClientRect()
 
-  ###
+  ###*
   # sets the x / y translation of an element
   # @param {jQlite Element} el
   # @param {int} x - x translate pixels
@@ -54,57 +77,58 @@ DraggableController = ($document, $compile, DragAndDrop) ->
       "-webkit-transform": "translate(#{x}px, #{y}px)"
       "-ms-transform": "translate(#{x}px, #{y}px)"
 
-  ###
+  ###*
   # intitalizes the draggable
   ###
   vm.init = (element, options = {}) ->
-    console.log "draggable init:", element, options
+    console.log "draggable init:", element, options, DragAndDrop
     draggableEl = element
+    original.rect = getElementRect draggableEl
     current.rect = getElementRect draggableEl
     if options.id then vm.id = options.id else vm.id = DragAndDrop.uuid()
-    if options.clone
-      createClone()
+    if options.clone then createClone()
 
 
-  ###
+  ###*
   # handler for when the drag starts
   ###
   vm.start = (e) ->
     start.rect = getElementRect draggableEl
     start.event = e
+    start.translate =
+      x: current.translate.x
+      y: current.translate.y
+    start.coords = getEventCoordinates start.event
     vm.midPoint = [
-      start.rect.left + start.rect.width/2,
-      start.rect.top + start.rect.height/2
+      original.rect.left + start.translate.x + original.rect.width/2,
+      original.rect.top + start.translate.y + original.rect.height/2
     ]
 
-  ###
+  ###*
   # handler for when moving the draggable
   ###
   vm.move = (e) ->
-    # console.log "move:", e
-    startCoords = getEventCoordinates start.event
-    currentCoords = getEventCoordinates e
-    xPos = start.rect.left + (currentCoords[0] - startCoords[0])
-    yPos = start.rect.top + (currentCoords[1] - startCoords[1])
-    setElementTranslate draggableEl, xPos, yPos
+    current.coords = getEventCoordinates e
     current.event = e
-    current.rect.left = start.rect.left + xPos
-    current.rect.right = start.rect.right + xPos
-    current.rect.top = start.rect.top + yPos
-    current.rect.bottom = start.rect.bottom + yPos
+    current.rect = getElementRect draggableEl
+    current.translate.x =
+      start.translate.x + (current.coords[0] - start.coords[0])
+    current.translate.y =
+      start.translate.y + (current.coords[1] - start.coords[1])
     vm.midPoint = [
-      xPos+start.rect.width/2,
-      yPos+start.rect.height/2
+      original.rect.left + current.translate.x + original.rect.width/2,
+      original.rect.top + current.translate.y + original.rect.height/2
     ]
+    setElementTranslate draggableEl, current.translate.x, current.translate.y
 
-  ###
+  ###*
   # handler for when moving the draggable
   ###
   vm.assignTo = (droppable) ->
     current.droppables.push droppable
     draggableEl.addClass "draggable-assigned"
 
-  ###
+  ###*
   # handler for when moving the draggable
   ###
   vm.removeFrom = (droppable) ->
@@ -113,10 +137,9 @@ DraggableController = ($document, $compile, DragAndDrop) ->
     unless current.droppables.length > 0
       draggableEl.removeClass "draggable-assigned"
 
-  vm.getItems = ->
-    return current.droppables
+  vm.getItems = -> return current.droppables
 
-  ###
+  ###*
   # checks if the draggable is assigned or not
   ###
   vm.isAssigned = ->
@@ -124,7 +147,7 @@ DraggableController = ($document, $compile, DragAndDrop) ->
       return true
     return false
 
-  ###
+  ###*
   # get the current dimensions of the draggable
   ###
   vm.getRect = ->
@@ -132,7 +155,7 @@ DraggableController = ($document, $compile, DragAndDrop) ->
 
   return vm
 
-DraggableController.$inject = [ "$document", "$compile", "DragAndDrop" ]
+DraggableController.$inject = [ "$log", "$document", "$compile", "DragAndDrop" ]
 
 draggableDirective = ($window, $document, $compile, DragAndDrop) ->
 
@@ -147,7 +170,7 @@ draggableDirective = ($window, $document, $compile, DragAndDrop) ->
       if attrs.clone then options.clone = true
       return options
 
-    ###
+    ###*
     # handler for when the draggable is released
     # @param {Event} e - event when the item is released
     ###
@@ -158,7 +181,7 @@ draggableDirective = ($window, $document, $compile, DragAndDrop) ->
       $document.off moveEvents, onMove
       $document.off releaseEvents, onRelease
 
-    ###
+    ###*
     # handler for when the draggable is moved
     # @param {Event} e - event when the item is released
     ###
@@ -171,7 +194,7 @@ draggableDirective = ($window, $document, $compile, DragAndDrop) ->
       else
         DragAndDrop.trigger "drag-out", e
 
-    ###
+    ###*
     # handler for when the draggable is pressed
     # @param {Event} e - event when the item is pressed
     ###
@@ -198,7 +221,8 @@ draggableDirective = ($window, $document, $compile, DragAndDrop) ->
     link: linkFunction
   }
 
-draggableDirective.$inject = [ "$window", "$document", "$compile", "DragAndDrop" ]
+draggableDirective.$inject =
+  [ "$window", "$document", "$compile", "DragAndDrop" ]
 angular
   .module "onlea.components.dnd"
   .directive "draggable", draggableDirective

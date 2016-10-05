@@ -31,7 +31,7 @@ DragAndDropService = function($log) {
     });
   };
 
-  /*
+  /**
    * Checks if a provided point is within the bounds object
    * @param {Point} point - array containing x and y coords
    * @param {DOMRect} bounds - object representing the rectangle bounds
@@ -42,7 +42,7 @@ DragAndDropService = function($log) {
     return (bounds.left < (ref = point[0]) && ref < bounds.right) && (bounds.top < (ref1 = point[1]) && ref1 < bounds.bottom);
   };
 
-  /*
+  /**
    * Checks if two rectangles intersect each other
    * @param {DOMRect} r1 - object representing the first rectangle
    * @param {DOMRect} r2 - object representing the second rectangle
@@ -52,7 +52,7 @@ DragAndDropService = function($log) {
     return !(r2.left > r1.right || r2.right < r1.left || r2.top > r1.bottom || r2.bottom < r1.top);
   };
 
-  /*
+  /**
    * registers a callback function to a specific event
    * @param {string} eventName - event name to bind to
    * @param {function} cb - callback function to execute on the event
@@ -69,7 +69,7 @@ DragAndDropService = function($log) {
     }
   };
 
-  /*
+  /**
    * triggers the event handlers for the provided event name
    * @param {string} eventName - the event name to trigger
    * @param {Event} [eventData] - the event that caused the trigger
@@ -96,7 +96,7 @@ DragAndDropService = function($log) {
     return results;
   };
 
-  /*
+  /**
    * gets the last event for the name given
    * @return the event corresponding to the name
    */
@@ -106,21 +106,21 @@ DragAndDropService = function($log) {
     }
   };
 
-  /*
+  /**
    * @return current state of the drag and drop
    */
   getState = function() {
     return state;
   };
 
-  /*
+  /**
    * @return {Draggable} the item that is currently being dragged
    */
   getCurrentDraggable = function() {
     return state.current.draggable;
   };
 
-  /*
+  /**
    * returns the drop spot that the current drag item is over
    * @return {Droppable} droppable the draggable is over
    */
@@ -128,7 +128,7 @@ DragAndDropService = function($log) {
     return state.current.droppable;
   };
 
-  /*
+  /**
    * sets the event for the given name
    * @param {string} eventName - the name of the event
    * @param {Event} eventValue - thh event for eventName
@@ -138,7 +138,7 @@ DragAndDropService = function($log) {
     return state.events[eventName] = eventValue;
   };
 
-  /*
+  /**
    * sets the current draggable
    * @param {Draggable} draggable - drag item to set
    */
@@ -146,7 +146,7 @@ DragAndDropService = function($log) {
     return state.current.draggable = draggable;
   };
 
-  /*
+  /**
    * sets the current droppable
    * @param {Droppable} droppable - drop spot to set
    */
@@ -154,7 +154,7 @@ DragAndDropService = function($log) {
     return state.current.droppable = droppable;
   };
 
-  /*
+  /**
    * assigns a drag item to a drop spot
    * @param {Draggable} draggable - drag item to remove
    * @param {Droppable} droppable - drop spot to remove from
@@ -165,7 +165,7 @@ DragAndDropService = function($log) {
     return trigger('item-assigned', getEvent("drag-end"));
   };
 
-  /*
+  /**
    * removes a drag item from a drop spot
    * @param {Draggable} draggable - drag item to remove
    * @param {Droppable} droppable - drop spot to remove from
@@ -187,7 +187,7 @@ DragAndDropService = function($log) {
     }
   };
 
-  /*
+  /**
    * checks all of the drop spots to see if the currently dragged
    * item is overtop of them, uses the midpoint of the drag item.
    * fires the "drag-enter" and "drag-leave" events when entering and
@@ -219,7 +219,7 @@ DragAndDropService = function($log) {
     return results;
   };
 
-  /*
+  /**
    * add a drop spot to the drag and drop
    * @param {Droppable} droppable - a drop spot
    */
@@ -227,7 +227,7 @@ DragAndDropService = function($log) {
     return droppables.push(droppable);
   };
 
-  /*
+  /**
    * add a drag item to the drag and drop
    * @param {Draggable} draggable - a drag item
    */
@@ -235,7 +235,7 @@ DragAndDropService = function($log) {
     return draggables.push(draggable);
   };
 
-  /*
+  /**
    * the dragging state
    * @return {boolean} - boolean value if dragging or not
    */
@@ -290,32 +290,60 @@ angular.module("onlea.components.dnd").factory("DragAndDrop", DragAndDropService
  */
 var DraggableController, draggableDirective;
 
-DraggableController = function($document, $compile, DragAndDrop) {
-  var createClone, current, draggableEl, getElementRect, getEventCoordinates, setElementTranslate, start, vm;
+DraggableController = function($log, $document, $compile, DragAndDrop) {
+  var createClone, current, draggableEl, getBodyOffset, getElementRect, getEventCoordinates, original, positionClone, setElementTranslate, start, vm;
   draggableEl = null;
   vm = this;
   start = {
     rect: {},
-    event: null
+    event: null,
+    translate: {
+      x: 0,
+      y: 0
+    }
   };
   current = {
     rect: {},
     droppables: [],
-    event: null
+    event: null,
+    translate: {
+      x: 0,
+      y: 0
+    }
+  };
+  original = {
+    rect: {}
+  };
+  getBodyOffset = function(elem) {
+    var bodyRect, elemRect, offset;
+    bodyRect = document.body.getBoundingClientRect();
+    elemRect = elem[0].getBoundingClientRect();
+    return offset = {
+      top: elemRect.top - bodyRect.top,
+      left: elemRect.left - bodyRect.left
+    };
   };
 
-  /*
+  /**
    * gets the screen coordinates from a mouse or touch event
    */
   createClone = function() {
-    var cloneEl;
+    var cloneEl, offset;
     cloneEl = $compile(angular.element("<div>" + draggableEl.html() + "</div>"))(vm);
     cloneEl.addClass("clone");
     cloneEl.addClass(draggableEl.attr("class"));
-    return $document.find("body").append(cloneEl);
+    offset = getBodyOffset(draggableEl);
+    cloneEl.css({
+      position: "absolute",
+      top: offset.top + "px",
+      left: offset.left + "px"
+    });
+    $document.find("body").append(cloneEl);
+    return draggableEl = cloneEl;
   };
+  positionClone = function() {};
 
-  /*
+  /**
    * gets the screen coordinates from a mouse or touch event
    */
   getEventCoordinates = function(e) {
@@ -326,7 +354,7 @@ DraggableController = function($document, $compile, DragAndDrop) {
     }
   };
 
-  /*
+  /**
    * gets the bounding DOMRect of an element
    * @param {jQlite Element} el - jquery (lite) wrapped element
    * @return {DOMRect} - screen boundary of element
@@ -335,7 +363,7 @@ DraggableController = function($document, $compile, DragAndDrop) {
     return el[0].getBoundingClientRect();
   };
 
-  /*
+  /**
    * sets the x / y translation of an element
    * @param {jQlite Element} el
    * @param {int} x - x translate pixels
@@ -349,15 +377,16 @@ DraggableController = function($document, $compile, DragAndDrop) {
     });
   };
 
-  /*
+  /**
    * intitalizes the draggable
    */
   vm.init = function(element, options) {
     if (options == null) {
       options = {};
     }
-    console.log("draggable init:", element, options);
+    console.log("draggable init:", element, options, DragAndDrop);
     draggableEl = element;
+    original.rect = getElementRect(draggableEl);
     current.rect = getElementRect(draggableEl);
     if (options.id) {
       vm.id = options.id;
@@ -369,34 +398,34 @@ DraggableController = function($document, $compile, DragAndDrop) {
     }
   };
 
-  /*
+  /**
    * handler for when the drag starts
    */
   vm.start = function(e) {
     start.rect = getElementRect(draggableEl);
     start.event = e;
-    return vm.midPoint = [start.rect.left + start.rect.width / 2, start.rect.top + start.rect.height / 2];
+    start.translate = {
+      x: current.translate.x,
+      y: current.translate.y
+    };
+    start.coords = getEventCoordinates(start.event);
+    return vm.midPoint = [original.rect.left + start.translate.x + original.rect.width / 2, original.rect.top + start.translate.y + original.rect.height / 2];
   };
 
-  /*
+  /**
    * handler for when moving the draggable
    */
   vm.move = function(e) {
-    var currentCoords, startCoords, xPos, yPos;
-    startCoords = getEventCoordinates(start.event);
-    currentCoords = getEventCoordinates(e);
-    xPos = start.rect.left + (currentCoords[0] - startCoords[0]);
-    yPos = start.rect.top + (currentCoords[1] - startCoords[1]);
-    setElementTranslate(draggableEl, xPos, yPos);
+    current.coords = getEventCoordinates(e);
     current.event = e;
-    current.rect.left = start.rect.left + xPos;
-    current.rect.right = start.rect.right + xPos;
-    current.rect.top = start.rect.top + yPos;
-    current.rect.bottom = start.rect.bottom + yPos;
-    return vm.midPoint = [xPos + start.rect.width / 2, yPos + start.rect.height / 2];
+    current.rect = getElementRect(draggableEl);
+    current.translate.x = start.translate.x + (current.coords[0] - start.coords[0]);
+    current.translate.y = start.translate.y + (current.coords[1] - start.coords[1]);
+    vm.midPoint = [original.rect.left + current.translate.x + original.rect.width / 2, original.rect.top + current.translate.y + original.rect.height / 2];
+    return setElementTranslate(draggableEl, current.translate.x, current.translate.y);
   };
 
-  /*
+  /**
    * handler for when moving the draggable
    */
   vm.assignTo = function(droppable) {
@@ -404,7 +433,7 @@ DraggableController = function($document, $compile, DragAndDrop) {
     return draggableEl.addClass("draggable-assigned");
   };
 
-  /*
+  /**
    * handler for when moving the draggable
    */
   vm.removeFrom = function(droppable) {
@@ -422,7 +451,7 @@ DraggableController = function($document, $compile, DragAndDrop) {
     return current.droppables;
   };
 
-  /*
+  /**
    * checks if the draggable is assigned or not
    */
   vm.isAssigned = function() {
@@ -432,7 +461,7 @@ DraggableController = function($document, $compile, DragAndDrop) {
     return false;
   };
 
-  /*
+  /**
    * get the current dimensions of the draggable
    */
   vm.getRect = function() {
@@ -441,7 +470,7 @@ DraggableController = function($document, $compile, DragAndDrop) {
   return vm;
 };
 
-DraggableController.$inject = ["$document", "$compile", "DragAndDrop"];
+DraggableController.$inject = ["$log", "$document", "$compile", "DragAndDrop"];
 
 draggableDirective = function($window, $document, $compile, DragAndDrop) {
   var linkFunction;
@@ -459,7 +488,7 @@ draggableDirective = function($window, $document, $compile, DragAndDrop) {
       return options;
     };
 
-    /*
+    /**
      * handler for when the draggable is released
      * @param {Event} e - event when the item is released
      */
@@ -471,7 +500,7 @@ draggableDirective = function($window, $document, $compile, DragAndDrop) {
       return $document.off(releaseEvents, onRelease);
     };
 
-    /*
+    /**
      * handler for when the draggable is moved
      * @param {Event} e - event when the item is released
      */
@@ -487,7 +516,7 @@ draggableDirective = function($window, $document, $compile, DragAndDrop) {
       }
     };
 
-    /*
+    /**
      * handler for when the draggable is pressed
      * @param {Event} e - event when the item is pressed
      */
@@ -527,7 +556,7 @@ DroppableController = function($log, DragAndDrop) {
     draggables: []
   };
 
-  /*
+  /**
    * initialize the droppable area
    */
   vm.init = function(element, options) {
@@ -541,21 +570,21 @@ DroppableController = function($log, DragAndDrop) {
     }
   };
 
-  /*
+  /**
    * update the dimensions for the droppable area
    */
   vm.updateDimensions = function() {
     return current.rect = droppableEl[0].getBoundingClientRect();
   };
 
-  /*
+  /**
    * add a draggable to the drop spot
    */
   vm.addItem = function(draggable) {
     return current.draggables.push(draggable);
   };
 
-  /*
+  /**
    * remove a draggable from the drop spot
    */
   vm.removeItem = function(draggable) {
@@ -573,7 +602,7 @@ DroppableController = function($log, DragAndDrop) {
     return results;
   };
 
-  /*
+  /**
    * activate the drop spot
    */
   vm.activate = function() {
@@ -581,7 +610,7 @@ DroppableController = function($log, DragAndDrop) {
     return droppableEl.addClass("droppable-hovered");
   };
 
-  /*
+  /**
    * deactivate the drop spot
    */
   vm.deactivate = function() {
@@ -589,7 +618,7 @@ DroppableController = function($log, DragAndDrop) {
     return droppableEl.removeClass("droppable-hovered");
   };
 
-  /*
+  /**
    * get the DOMRect of the drop spot
    */
   vm.getRect = function() {

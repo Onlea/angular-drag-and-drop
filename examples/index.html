@@ -20,13 +20,6 @@
         -webkit-user-select: none;
         user-select: none;
       }
-      [draggable] {
-        width:100px;
-        height:100px;
-        border:1px solid #999;
-        text-align:center;
-        line-height:100px;
-      }
 
     </style>
   </head>
@@ -38,12 +31,22 @@
       <div ng-app="example">
         <div ng-controller="ExampleController">
 
-            <div draggable clone="true" class="drag-item">
-                <p>Draggable</p>
+            <div class="description-drag-items">
+              <div draggable class="drag-item">
+                  <p>A 500 by 400 window opens with a title</p>
+              </div>
+              <div draggable class="drag-item">
+                  <p>The background is black</p>
+              </div>
+              <div draggable class="drag-item">
+                  <p>Two dots appear</p>
+              </div>
+              <div draggable clone="true" class="drag-item">
+                  <p>One dot is blue and one is red</p>
+              </div>
             </div>
 
-            <div droppable class="drop-spot"></div>
-            <div droppable class="drop-spot"></div>
+            <div droppable class="drop-spot description-drop-spot"></div>
 
         </div>
       </div>

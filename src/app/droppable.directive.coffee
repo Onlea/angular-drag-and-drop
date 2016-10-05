@@ -8,7 +8,7 @@ DroppableController = ($log, DragAndDrop) ->
     rect: {}
     draggables: []
 
-  ###
+  ###*
   # initialize the droppable area
   ###
   vm.init = (element, options) ->
@@ -18,19 +18,19 @@ DroppableController = ($log, DragAndDrop) ->
     if options.id then vm.id = options.id else vm.id = DragAndDrop.uuid()
 
 
-  ###
+  ###*
   # update the dimensions for the droppable area
   ###
   vm.updateDimensions = ->
     current.rect = droppableEl[0].getBoundingClientRect()
 
-  ###
+  ###*
   # add a draggable to the drop spot
   ###
   vm.addItem = (draggable) ->
     current.draggables.push draggable
 
-  ###
+  ###*
   # remove a draggable from the drop spot
   ###
   vm.removeItem = (draggable) ->
@@ -38,21 +38,21 @@ DroppableController = ($log, DragAndDrop) ->
       if item.id is draggable.id
         current.draggables.splice(i, 1)
 
-  ###
+  ###*
   # activate the drop spot
   ###
   vm.activate = ->
     vm.isActive = true
     droppableEl.addClass "droppable-hovered"
 
-  ###
+  ###*
   # deactivate the drop spot
   ###
   vm.deactivate = ->
     vm.isActive = false
     droppableEl.removeClass "droppable-hovered"
 
-  ###
+  ###*
   # get the DOMRect of the drop spot
   ###
   vm.getRect = ->

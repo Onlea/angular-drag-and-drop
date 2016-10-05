@@ -28,7 +28,7 @@ DragAndDropService = ($log)->
       v.toString(16)
     )
 
-  ###
+  ###*
   # Checks if a provided point is within the bounds object
   # @param {Point} point - array containing x and y coords
   # @param {DOMRect} bounds - object representing the rectangle bounds
@@ -38,7 +38,7 @@ DragAndDropService = ($log)->
     return (bounds.left < point[0] < bounds.right and
             bounds.top < point[1] < bounds.bottom)
 
-  ###
+  ###*
   # Checks if two rectangles intersect each other
   # @param {DOMRect} r1 - object representing the first rectangle
   # @param {DOMRect} r2 - object representing the second rectangle
@@ -51,7 +51,7 @@ DragAndDropService = ($log)->
              r2.bottom < r1.top)
 
 
-  ###
+  ###*
   # registers a callback function to a specific event
   # @param {string} eventName - event name to bind to
   # @param {function} cb - callback function to execute on the event
@@ -65,7 +65,7 @@ DragAndDropService = ($log)->
         name: eventName
         cb: cb
 
-  ###
+  ###*
   # triggers the event handlers for the provided event name
   # @param {string} eventName - the event name to trigger
   # @param {Event} [eventData] - the event that caused the trigger
@@ -78,7 +78,7 @@ DragAndDropService = ($log)->
     for h in handlers
       if h.name is eventName then h.cb(state)
 
-  ###
+  ###*
   # gets the last event for the name given
   # @return the event corresponding to the name
   ###
@@ -86,26 +86,26 @@ DragAndDropService = ($log)->
     if state.events.hasOwnProperty name
       return state.events[name]
 
-  ###
+  ###*
   # @return current state of the drag and drop
   ###
   getState = ->
     return state
 
-  ###
+  ###*
   # @return {Draggable} the item that is currently being dragged
   ###
   getCurrentDraggable = ->
     return state.current.draggable
 
-  ###
+  ###*
   # returns the drop spot that the current drag item is over
   # @return {Droppable} droppable the draggable is over
   ###
   getCurrentDroppable = ->
     return state.current.droppable
 
-  ###
+  ###*
   # sets the event for the given name
   # @param {string} eventName - the name of the event
   # @param {Event} eventValue - thh event for eventName
@@ -114,21 +114,21 @@ DragAndDropService = ($log)->
     state.current.event = eventValue
     state.events[eventName] = eventValue
 
-  ###
+  ###*
   # sets the current draggable
   # @param {Draggable} draggable - drag item to set
   ###
   setCurrentDraggable = (draggable) ->
     state.current.draggable = draggable
 
-  ###
+  ###*
   # sets the current droppable
   # @param {Droppable} droppable - drop spot to set
   ###
   setCurrentDroppable = (droppable) ->
     state.current.droppable = droppable
 
-  ###
+  ###*
   # assigns a drag item to a drop spot
   # @param {Draggable} draggable - drag item to remove
   # @param {Droppable} droppable - drop spot to remove from
@@ -138,7 +138,7 @@ DragAndDropService = ($log)->
     droppable.addItem draggable
     trigger 'item-assigned', getEvent "drag-end"
 
-  ###
+  ###*
   # removes a drag item from a drop spot
   # @param {Draggable} draggable - drag item to remove
   # @param {Droppable} droppable - drop spot to remove from
@@ -152,7 +152,7 @@ DragAndDropService = ($log)->
       for item in draggable.getItems()
         removeAssignment draggable, item
 
-  ###
+  ###*
   # checks all of the drop spots to see if the currently dragged
   # item is overtop of them, uses the midpoint of the drag item.
   # fires the "drag-enter" and "drag-leave" events when entering and
@@ -171,21 +171,21 @@ DragAndDropService = ($log)->
           droppable.deactivate()
           trigger 'drag-leave', getEvent "drag"
 
-  ###
+  ###*
   # add a drop spot to the drag and drop
   # @param {Droppable} droppable - a drop spot
   ###
   addDroppable = (droppable) ->
     droppables.push droppable
 
-  ###
+  ###*
   # add a drag item to the drag and drop
   # @param {Draggable} draggable - a drag item
   ###
   addDraggable = (draggable) ->
     draggables.push draggable
 
-  ###
+  ###*
   # the dragging state
   # @return {boolean} - boolean value if dragging or not
   ###
